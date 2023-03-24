@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{ useLayoutEffect,useState } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { withRouter } from 'next/router';
@@ -13,7 +13,7 @@ import dataFetch from '../lib/data-fetch';
 import { updateUser, updateProgress, toggleCatalogContent } from '../lib/store';
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
-import { Paper, Tooltip } from '@material-ui/core';
+import { Paper, Tooltip,Checkbox } from '@material-ui/core';
 import SettingsRemoteIcon from '@material-ui/icons/SettingsRemote';
 import SettingsCellIcon from '@material-ui/icons/SettingsCell';
 import ExtensionSandbox from "./ExtensionSandbox";
@@ -24,6 +24,10 @@ import { faTachometerAlt } from '@fortawesome/free-solid-svg-icons';
 import MesherySettingsPerformanceComponent from './MesherySettingsPerformanceComponent';
 import { ctxUrl } from '../utils/multi-ctx';
 import { iconMedium } from '../css/icons.styles';
+
+import { isExtensionOpen } from '../pages/_app';
+
+
 
 
 const styles = (theme) => ({
@@ -94,6 +98,54 @@ const styles = (theme) => ({
     }
   }
 });
+
+function ThemeToggler({
+  theme, themeSetter, enqueueSnackbar
+}) {
+  const [themeToggle, setthemeToggle] = useState(false);
+  const defaultTheme = "light";
+  const handle = () => {
+    if (isExtensionOpen()) {
+      return;
+    }
+
+    theme === "dark" ? setthemeToggle(true) : setthemeToggle(false);
+    localStorage.setItem("Theme", theme);
+  };
+
+  useLayoutEffect(() => {
+    if (isExtensionOpen()) {
+      if (localStorage.getItem("Theme") && localStorage.getItem("Theme") !== defaultTheme) {
+        themeSetter(defaultTheme);
+      }
+      return;
+    }
+
+    if (localStorage.getItem("Theme") === null) {
+      themeSetter(defaultTheme);
+    } else {
+      themeSetter(localStorage.getItem("Theme"));
+    }
+
+  }, []);
+
+  useLayoutEffect(handle, [theme]);
+
+  const themeToggler = () => {
+    if (isExtensionOpen()) {
+      enqueueSnackbar("Toggling between themes is not supported in MeshMap", { variant : "info", preventDuplicate : true })
+      return;
+    }
+    theme === "light" ? themeSetter("dark") : themeSetter("light");
+  };
+
+  return (
+    <div onClick={themeToggler}>
+      Dark Mode <Checkbox color="success" checked={themeToggle} onChange={themeToggler}/>
+    </div>
+  )
+}
+
 
 class UserPreference extends React.Component {
   constructor(props) {
@@ -257,7 +309,7 @@ class UserPreference extends React.Component {
 
   render() {
     const {
-      anonymousStats, perfResultStats, tabVal, userPrefs, providerType, catalogContent
+      anonymousStats, perfResultStats, tabVal, userPrefs, providerType,catalogContent
     } = this.state;
     const { classes } = this.props;
 
@@ -329,6 +381,16 @@ class UserPreference extends React.Component {
                     labelPlacement="end"
                     label="Meshery Catalog Content"
                   />
+                </FormGroup>
+              </FormControl>
+            </div>
+            <div className={classes.formContainer}>
+              <FormControl component="fieldset" className={classes.formGrp}>
+                <FormLabel component="legend" className={classes.formLegend}>Extensions</FormLabel>
+                <FormGroup>
+
+                  <ThemeToggler classes={classes} theme={this.props.theme} themeSetter={this.props.themeSetter} enqueueSnackbar={this.props.enqueueSnackbar} />
+
                 </FormGroup>
               </FormControl>
             </div>
